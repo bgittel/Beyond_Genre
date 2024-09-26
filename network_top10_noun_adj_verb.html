@@ -1,0 +1,552 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.0.0-rc.4/css/tom-select.min.css" integrity="sha512-43fHB3GLgZfz8QXl1RPQ8O66oIgv3po9cJ5erMt1c4QISq9dYb195T3vr5ImnJPXuVroKcGBPXBFKETW8jrPNQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.0.0-rc.4/js/tom-select.complete.js" integrity="sha512-jeF9CfnvzDiw9G9xiksVjxR2lib44Gnovvkv+3CgCG6NXCD4gqlA5nDAVW5WjpA+i+/zKsUWV5xNEbW1X/HH0Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 1000px;
+                 background-color: white;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+                <div id="select-menu" class="card-header">
+                    <div class="row no-gutters">
+                        <div class="col-10 pb-2">
+                            <select
+                            class="form-select"
+                            aria-label="Default select example"
+                            onchange="selectNode([value]);"
+                            id="select-node"
+                            placeholder="Select node..."
+                            >
+                                <option selected>Select a Node by ID</option>
+                                
+                                    <option value="verb_wachsen">verb_wachsen</option>
+                                
+                                    <option value="conservative revolution literature">conservative revolution literature</option>
+                                
+                                    <option value="noun_reich">noun_reich</option>
+                                
+                                    <option value="adj_dunkel">adj_dunkel</option>
+                                
+                                    <option value="adj_preussisch">adj_preussisch</option>
+                                
+                                    <option value="noun_krieg">noun_krieg</option>
+                                
+                                    <option value="verb_weisen">verb_weisen</option>
+                                
+                                    <option value="adj_gleich">adj_gleich</option>
+                                
+                                    <option value="noun_land">noun_land</option>
+                                
+                                    <option value="noun_könig">noun_könig</option>
+                                
+                                    <option value="noun_majestät">noun_majestät</option>
+                                
+                                    <option value="noun_vorstellung">noun_vorstellung</option>
+                                
+                                    <option value="worldview literature">worldview literature</option>
+                                
+                                    <option value="verb_bekommen">verb_bekommen</option>
+                                
+                                    <option value="noun_erkenntnis">noun_erkenntnis</option>
+                                
+                                    <option value="noun_idee">noun_idee</option>
+                                
+                                    <option value="noun_körper">noun_körper</option>
+                                
+                                    <option value="verb_entstehen">verb_entstehen</option>
+                                
+                                    <option value="noun_weile">noun_weile</option>
+                                
+                                    <option value="verb_spüren">verb_spüren</option>
+                                
+                                    <option value="noun_gefühl">noun_gefühl</option>
+                                
+                                    <option value="verb_erinnern">verb_erinnern</option>
+                                
+                                    <option value="noun_bein">noun_bein</option>
+                                
+                                    <option value="decadence literature">decadence literature</option>
+                                
+                                    <option value="adj_bissch">adj_bissch</option>
+                                
+                                    <option value="adj_gewiß">adj_gewiß</option>
+                                
+                                    <option value="noun_zeitung">noun_zeitung</option>
+                                
+                                    <option value="noun_kaffee">noun_kaffee</option>
+                                
+                                    <option value="noun_zimmer">noun_zimmer</option>
+                                
+                                    <option value="adj_rot">adj_rot</option>
+                                
+                                    <option value="noun_nase">noun_nase</option>
+                                
+                                    <option value="noun_zigarre">noun_zigarre</option>
+                                
+                                    <option value="verb_warten">verb_warten</option>
+                                
+                                    <option value="progress critique">progress critique</option>
+                                
+                                    <option value="noun_satz">noun_satz</option>
+                                
+                                    <option value="noun_auto">noun_auto</option>
+                                
+                                    <option value="noun_zigarette">noun_zigarette</option>
+                                
+                                    <option value="verb_überlegen">verb_überlegen</option>
+                                
+                                    <option value="verb_nachdenken">verb_nachdenken</option>
+                                
+                                    <option value="noun_angst">noun_angst</option>
+                                
+                                    <option value="noun_haut">noun_haut</option>
+                                
+                                    <option value="noun_telefon">noun_telefon</option>
+                                
+                                    <option value="society critique">society critique</option>
+                                
+                                    <option value="verb_kriegen">verb_kriegen</option>
+                                
+                                    <option value="noun_junge">noun_junge</option>
+                                
+                                    <option value="adj_richtig">adj_richtig</option>
+                                
+                                    <option value="noun_kerl">noun_kerl</option>
+                                
+                                    <option value="noun_">noun_</option>
+                                
+                                    <option value="noun_bett">noun_bett</option>
+                                
+                                    <option value="adj_bisschen">adj_bisschen</option>
+                                
+                                    <option value="noun_dorf">noun_dorf</option>
+                                
+                                    <option value="regional heritage art">regional heritage art</option>
+                                
+                                    <option value="noun_stube">noun_stube</option>
+                                
+                                    <option value="noun_bauer">noun_bauer</option>
+                                
+                                    <option value="noun_dorfe">noun_dorfe</option>
+                                
+                                    <option value="noun_geld">noun_geld</option>
+                                
+                                    <option value="noun_knecht">noun_knecht</option>
+                                
+                                    <option value="verb_reden">verb_reden</option>
+                                
+                                    <option value="verb_schaun">verb_schaun</option>
+                                
+                                    <option value="noun_sonntag">noun_sonntag</option>
+                                
+                                    <option value="cultural critique">cultural critique</option>
+                                
+                                    <option value="noun_geruch">noun_geruch</option>
+                                
+                                    <option value="noun_cresspahl">noun_cresspahl</option>
+                                
+                                    <option value="modernity critique">modernity critique</option>
+                                
+                                    <option value="noun_dr">noun_dr</option>
+                                
+                                    <option value="noun_person">noun_person</option>
+                                
+                                    <option value="verb_bestehen">verb_bestehen</option>
+                                
+                                    <option value="noun_s">noun_s</option>
+                                
+                                    <option value="noun_gesin">noun_gesin</option>
+                                
+                                    <option value="noun_schule">noun_schule</option>
+                                
+                                    <option value="noun_marie">noun_marie</option>
+                                
+                                    <option value="social critique">social critique</option>
+                                
+                                    <option value="verb_schreien">verb_schreien</option>
+                                
+                                    <option value="verb_merken">verb_merken</option>
+                                
+                                    <option value="noun_essen">noun_essen</option>
+                                
+                                    <option value="critique of the present">critique of the present</option>
+                                
+                                    <option value="noun_tier">noun_tier</option>
+                                
+                                    <option value="civilisation critique">civilisation critique</option>
+                                
+                                    <option value="noun_meer">noun_meer</option>
+                                
+                                    <option value="noun_schiff">noun_schiff</option>
+                                
+                                    <option value="noun_masse">noun_masse</option>
+                                
+                                    <option value="verb_drehen">verb_drehen</option>
+                                
+                                    <option value="verb_laufen">verb_laufen</option>
+                                
+                                    <option value="verb_töten">verb_töten</option>
+                                
+                                    <option value="verb_blicken">verb_blicken</option>
+                                
+                            </select>
+                        </div>
+                        <div class="col-2 pb-2">
+                            <button type="button" class="btn btn-primary btn-block" onclick="neighbourhoodHighlight({nodes: []});">Reset Selection</button>
+                        </div>
+                    </div>
+                </div>
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+                  new TomSelect("#select-node",{
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      }
+                  });
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "blue", "font": {"color": "black"}, "id": "verb_wachsen", "label": "verb_wachsen", "shape": "dot", "size": 15, "title": "verb_wachsen"}, {"color": "purple", "font": {"color": "black"}, "id": "conservative revolution literature", "label": "conservative revolution literature", "shape": "dot", "size": 28, "title": "conservative revolution literature"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_reich", "label": "noun_reich", "shape": "dot", "size": 15, "title": "noun_reich"}, {"color": "blue", "font": {"color": "black"}, "id": "adj_dunkel", "label": "adj_dunkel", "shape": "dot", "size": 15, "title": "adj_dunkel"}, {"color": "blue", "font": {"color": "black"}, "id": "adj_preussisch", "label": "adj_preussisch", "shape": "dot", "size": 15, "title": "adj_preussisch"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_krieg", "label": "noun_krieg", "shape": "dot", "size": 15, "title": "noun_krieg"}, {"color": "blue", "font": {"color": "black"}, "id": "verb_weisen", "label": "verb_weisen", "shape": "dot", "size": 15, "title": "verb_weisen"}, {"color": "blue", "font": {"color": "black"}, "id": "adj_gleich", "label": "adj_gleich", "shape": "dot", "size": 15, "title": "adj_gleich"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_land", "label": "noun_land", "shape": "dot", "size": 15, "title": "noun_land"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_k\u00f6nig", "label": "noun_k\u00f6nig", "shape": "dot", "size": 15, "title": "noun_k\u00f6nig"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_majest\u00e4t", "label": "noun_majest\u00e4t", "shape": "dot", "size": 15, "title": "noun_majest\u00e4t"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_vorstellung", "label": "noun_vorstellung", "shape": "dot", "size": 15, "title": "noun_vorstellung"}, {"color": "purple", "font": {"color": "black"}, "id": "worldview literature", "label": "worldview literature", "shape": "dot", "size": 28, "title": "worldview literature"}, {"color": "blue", "font": {"color": "black"}, "id": "verb_bekommen", "label": "verb_bekommen", "shape": "dot", "size": 15, "title": "verb_bekommen"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_erkenntnis", "label": "noun_erkenntnis", "shape": "dot", "size": 15, "title": "noun_erkenntnis"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_idee", "label": "noun_idee", "shape": "dot", "size": 15, "title": "noun_idee"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_k\u00f6rper", "label": "noun_k\u00f6rper", "shape": "dot", "size": 15, "title": "noun_k\u00f6rper"}, {"color": "blue", "font": {"color": "black"}, "id": "verb_entstehen", "label": "verb_entstehen", "shape": "dot", "size": 15, "title": "verb_entstehen"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_weile", "label": "noun_weile", "shape": "dot", "size": 15, "title": "noun_weile"}, {"color": "blue", "font": {"color": "black"}, "id": "verb_sp\u00fcren", "label": "verb_sp\u00fcren", "shape": "dot", "size": 15, "title": "verb_sp\u00fcren"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_gef\u00fchl", "label": "noun_gef\u00fchl", "shape": "dot", "size": 15, "title": "noun_gef\u00fchl"}, {"color": "blue", "font": {"color": "black"}, "id": "verb_erinnern", "label": "verb_erinnern", "shape": "dot", "size": 15, "title": "verb_erinnern"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_bein", "label": "noun_bein", "shape": "dot", "size": 15, "title": "noun_bein"}, {"color": "purple", "font": {"color": "black"}, "id": "decadence literature", "label": "decadence literature", "shape": "dot", "size": 28, "title": "decadence literature"}, {"color": "blue", "font": {"color": "black"}, "id": "adj_bissch", "label": "adj_bissch", "shape": "dot", "size": 15, "title": "adj_bissch"}, {"color": "blue", "font": {"color": "black"}, "id": "adj_gewi\u00df", "label": "adj_gewi\u00df", "shape": "dot", "size": 15, "title": "adj_gewi\u00df"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_zeitung", "label": "noun_zeitung", "shape": "dot", "size": 15, "title": "noun_zeitung"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_kaffee", "label": "noun_kaffee", "shape": "dot", "size": 15, "title": "noun_kaffee"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_zimmer", "label": "noun_zimmer", "shape": "dot", "size": 15, "title": "noun_zimmer"}, {"color": "blue", "font": {"color": "black"}, "id": "adj_rot", "label": "adj_rot", "shape": "dot", "size": 15, "title": "adj_rot"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_nase", "label": "noun_nase", "shape": "dot", "size": 15, "title": "noun_nase"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_zigarre", "label": "noun_zigarre", "shape": "dot", "size": 15, "title": "noun_zigarre"}, {"color": "blue", "font": {"color": "black"}, "id": "verb_warten", "label": "verb_warten", "shape": "dot", "size": 15, "title": "verb_warten"}, {"color": "purple", "font": {"color": "black"}, "id": "progress critique", "label": "progress critique", "shape": "dot", "size": 28, "title": "progress critique"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_satz", "label": "noun_satz", "shape": "dot", "size": 15, "title": "noun_satz"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_auto", "label": "noun_auto", "shape": "dot", "size": 15, "title": "noun_auto"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_zigarette", "label": "noun_zigarette", "shape": "dot", "size": 15, "title": "noun_zigarette"}, {"color": "blue", "font": {"color": "black"}, "id": "verb_\u00fcberlegen", "label": "verb_\u00fcberlegen", "shape": "dot", "size": 15, "title": "verb_\u00fcberlegen"}, {"color": "blue", "font": {"color": "black"}, "id": "verb_nachdenken", "label": "verb_nachdenken", "shape": "dot", "size": 15, "title": "verb_nachdenken"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_angst", "label": "noun_angst", "shape": "dot", "size": 15, "title": "noun_angst"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_haut", "label": "noun_haut", "shape": "dot", "size": 15, "title": "noun_haut"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_telefon", "label": "noun_telefon", "shape": "dot", "size": 15, "title": "noun_telefon"}, {"color": "purple", "font": {"color": "black"}, "id": "society critique", "label": "society critique", "shape": "dot", "size": 28, "title": "society critique"}, {"color": "blue", "font": {"color": "black"}, "id": "verb_kriegen", "label": "verb_kriegen", "shape": "dot", "size": 15, "title": "verb_kriegen"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_junge", "label": "noun_junge", "shape": "dot", "size": 15, "title": "noun_junge"}, {"color": "blue", "font": {"color": "black"}, "id": "adj_richtig", "label": "adj_richtig", "shape": "dot", "size": 15, "title": "adj_richtig"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_kerl", "label": "noun_kerl", "shape": "dot", "size": 15, "title": "noun_kerl"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_", "label": "noun_", "shape": "dot", "size": 15, "title": "noun_"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_bett", "label": "noun_bett", "shape": "dot", "size": 15, "title": "noun_bett"}, {"color": "blue", "font": {"color": "black"}, "id": "adj_bisschen", "label": "adj_bisschen", "shape": "dot", "size": 15, "title": "adj_bisschen"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_dorf", "label": "noun_dorf", "shape": "dot", "size": 15, "title": "noun_dorf"}, {"color": "purple", "font": {"color": "black"}, "id": "regional heritage art", "label": "regional heritage art", "shape": "dot", "size": 28, "title": "regional heritage art"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_stube", "label": "noun_stube", "shape": "dot", "size": 15, "title": "noun_stube"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_bauer", "label": "noun_bauer", "shape": "dot", "size": 15, "title": "noun_bauer"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_dorfe", "label": "noun_dorfe", "shape": "dot", "size": 15, "title": "noun_dorfe"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_geld", "label": "noun_geld", "shape": "dot", "size": 15, "title": "noun_geld"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_knecht", "label": "noun_knecht", "shape": "dot", "size": 15, "title": "noun_knecht"}, {"color": "blue", "font": {"color": "black"}, "id": "verb_reden", "label": "verb_reden", "shape": "dot", "size": 15, "title": "verb_reden"}, {"color": "blue", "font": {"color": "black"}, "id": "verb_schaun", "label": "verb_schaun", "shape": "dot", "size": 15, "title": "verb_schaun"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_sonntag", "label": "noun_sonntag", "shape": "dot", "size": 15, "title": "noun_sonntag"}, {"color": "purple", "font": {"color": "black"}, "id": "cultural critique", "label": "cultural critique", "shape": "dot", "size": 28, "title": "cultural critique"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_geruch", "label": "noun_geruch", "shape": "dot", "size": 15, "title": "noun_geruch"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_cresspahl", "label": "noun_cresspahl", "shape": "dot", "size": 15, "title": "noun_cresspahl"}, {"color": "purple", "font": {"color": "black"}, "id": "modernity critique", "label": "modernity critique", "shape": "dot", "size": 28, "title": "modernity critique"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_dr", "label": "noun_dr", "shape": "dot", "size": 15, "title": "noun_dr"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_person", "label": "noun_person", "shape": "dot", "size": 15, "title": "noun_person"}, {"color": "blue", "font": {"color": "black"}, "id": "verb_bestehen", "label": "verb_bestehen", "shape": "dot", "size": 15, "title": "verb_bestehen"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_s", "label": "noun_s", "shape": "dot", "size": 15, "title": "noun_s"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_gesin", "label": "noun_gesin", "shape": "dot", "size": 15, "title": "noun_gesin"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_schule", "label": "noun_schule", "shape": "dot", "size": 15, "title": "noun_schule"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_marie", "label": "noun_marie", "shape": "dot", "size": 15, "title": "noun_marie"}, {"color": "purple", "font": {"color": "black"}, "id": "social critique", "label": "social critique", "shape": "dot", "size": 28, "title": "social critique"}, {"color": "blue", "font": {"color": "black"}, "id": "verb_schreien", "label": "verb_schreien", "shape": "dot", "size": 15, "title": "verb_schreien"}, {"color": "blue", "font": {"color": "black"}, "id": "verb_merken", "label": "verb_merken", "shape": "dot", "size": 15, "title": "verb_merken"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_essen", "label": "noun_essen", "shape": "dot", "size": 15, "title": "noun_essen"}, {"color": "purple", "font": {"color": "black"}, "id": "critique of the present", "label": "critique of the present", "shape": "dot", "size": 28, "title": "critique of the present"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_tier", "label": "noun_tier", "shape": "dot", "size": 15, "title": "noun_tier"}, {"color": "purple", "font": {"color": "black"}, "id": "civilisation critique", "label": "civilisation critique", "shape": "dot", "size": 28, "title": "civilisation critique"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_meer", "label": "noun_meer", "shape": "dot", "size": 15, "title": "noun_meer"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_schiff", "label": "noun_schiff", "shape": "dot", "size": 15, "title": "noun_schiff"}, {"color": "blue", "font": {"color": "black"}, "id": "noun_masse", "label": "noun_masse", "shape": "dot", "size": 15, "title": "noun_masse"}, {"color": "blue", "font": {"color": "black"}, "id": "verb_drehen", "label": "verb_drehen", "shape": "dot", "size": 15, "title": "verb_drehen"}, {"color": "blue", "font": {"color": "black"}, "id": "verb_laufen", "label": "verb_laufen", "shape": "dot", "size": 15, "title": "verb_laufen"}, {"color": "blue", "font": {"color": "black"}, "id": "verb_t\u00f6ten", "label": "verb_t\u00f6ten", "shape": "dot", "size": 15, "title": "verb_t\u00f6ten"}, {"color": "blue", "font": {"color": "black"}, "id": "verb_blicken", "label": "verb_blicken", "shape": "dot", "size": 15, "title": "verb_blicken"}]);
+                  edges = new vis.DataSet([{"color": "pink", "from": "verb_wachsen", "to": "conservative revolution literature", "value": 0.2147414270542253}, {"color": "pink", "from": "noun_reich", "to": "conservative revolution literature", "value": 0.2329878271842552}, {"color": "pink", "from": "adj_dunkel", "to": "conservative revolution literature", "value": 0.192852462127116}, {"color": "pink", "from": "adj_preussisch", "to": "conservative revolution literature", "value": 0.2447451715878383}, {"color": "pink", "from": "noun_krieg", "to": "conservative revolution literature", "value": 0.214102982909993}, {"color": "pink", "from": "verb_weisen", "to": "conservative revolution literature", "value": 0.1974291951962331}, {"color": "pink", "from": "adj_gleich", "to": "conservative revolution literature", "value": 0.1845626260906733}, {"color": "pink", "from": "noun_land", "to": "conservative revolution literature", "value": 0.162549848161448}, {"color": "pink", "from": "noun_k\u00f6nig", "to": "conservative revolution literature", "value": 0.1949836521752649}, {"color": "pink", "from": "noun_majest\u00e4t", "to": "conservative revolution literature", "value": 0.2275076446394123}, {"color": "pink", "from": "noun_vorstellung", "to": "worldview literature", "value": 0.2573873534405494}, {"color": "pink", "from": "verb_bekommen", "to": "worldview literature", "value": 0.2223401185032545}, {"color": "pink", "from": "noun_erkenntnis", "to": "worldview literature", "value": 0.2811482448647531}, {"color": "pink", "from": "noun_idee", "to": "worldview literature", "value": 0.2480274881383352}, {"color": "pink", "from": "noun_k\u00f6rper", "to": "worldview literature", "value": 0.2301208181774582}, {"color": "pink", "from": "verb_entstehen", "to": "worldview literature", "value": 0.2292955591395505}, {"color": "pink", "from": "noun_weile", "to": "worldview literature", "value": 0.1986945117533124}, {"color": "pink", "from": "verb_sp\u00fcren", "to": "worldview literature", "value": 0.2386429641280572}, {"color": "pink", "from": "noun_gef\u00fchl", "to": "worldview literature", "value": 0.1887844181140412}, {"color": "pink", "from": "verb_erinnern", "to": "worldview literature", "value": 0.2052166534501637}, {"color": "pink", "from": "noun_bein", "to": "decadence literature", "value": 0.1704561396154021}, {"color": "pink", "from": "adj_bissch", "to": "decadence literature", "value": 0.1888279740443407}, {"color": "pink", "from": "adj_gewi\u00df", "to": "decadence literature", "value": 0.1596684242426343}, {"color": "pink", "from": "noun_zeitung", "to": "decadence literature", "value": 0.1679392563316825}, {"color": "pink", "from": "noun_kaffee", "to": "decadence literature", "value": 0.1687776623279355}, {"color": "pink", "from": "noun_zimmer", "to": "decadence literature", "value": 0.1228104146748705}, {"color": "pink", "from": "adj_rot", "to": "decadence literature", "value": 0.1317815947024967}, {"color": "pink", "from": "noun_nase", "to": "decadence literature", "value": 0.1405749157764677}, {"color": "pink", "from": "noun_zigarre", "to": "decadence literature", "value": 0.1608947025229586}, {"color": "pink", "from": "verb_warten", "to": "decadence literature", "value": 0.1145601284098614}, {"color": "pink", "from": "verb_sp\u00fcren", "to": "progress critique", "value": 0.5631514558355764}, {"color": "pink", "from": "noun_satz", "to": "progress critique", "value": 0.5413137852006003}, {"color": "pink", "from": "noun_auto", "to": "progress critique", "value": 0.5051193480807412}, {"color": "pink", "from": "noun_zigarette", "to": "progress critique", "value": 0.4818799375108543}, {"color": "pink", "from": "verb_\u00fcberlegen", "to": "progress critique", "value": 0.4202052960787812}, {"color": "pink", "from": "adj_gleich", "to": "progress critique", "value": 0.3621170492997608}, {"color": "pink", "from": "verb_nachdenken", "to": "progress critique", "value": 0.4284356343211485}, {"color": "pink", "from": "noun_angst", "to": "progress critique", "value": 0.3454255405938556}, {"color": "pink", "from": "noun_haut", "to": "progress critique", "value": 0.4056286668435103}, {"color": "pink", "from": "noun_telefon", "to": "progress critique", "value": 0.4372205594288779}, {"color": "pink", "from": "adj_bissch", "to": "society critique", "value": 0.2049493762653466}, {"color": "pink", "from": "verb_kriegen", "to": "society critique", "value": 0.188050816940618}, {"color": "pink", "from": "noun_junge", "to": "society critique", "value": 0.1556156102800592}, {"color": "pink", "from": "adj_richtig", "to": "society critique", "value": 0.1619432652316216}, {"color": "pink", "from": "noun_kerl", "to": "society critique", "value": 0.1509594560923156}, {"color": "pink", "from": "noun_", "to": "society critique", "value": 0.1334859071377793}, {"color": "pink", "from": "noun_bett", "to": "society critique", "value": 0.132655995286506}, {"color": "pink", "from": "noun_zeitung", "to": "society critique", "value": 0.1465229619126634}, {"color": "pink", "from": "noun_zigarette", "to": "society critique", "value": 0.1583442252847441}, {"color": "pink", "from": "adj_bisschen", "to": "society critique", "value": 0.1579635132172709}, {"color": "pink", "from": "noun_dorf", "to": "regional heritage art", "value": 0.4532895170685599}, {"color": "pink", "from": "noun_stube", "to": "regional heritage art", "value": 0.3866465642868862}, {"color": "pink", "from": "noun_bauer", "to": "regional heritage art", "value": 0.3670593145785093}, {"color": "pink", "from": "noun_dorfe", "to": "regional heritage art", "value": 0.3542390299064682}, {"color": "pink", "from": "verb_kriegen", "to": "regional heritage art", "value": 0.3176325088614199}, {"color": "pink", "from": "noun_geld", "to": "regional heritage art", "value": 0.2592268884761325}, {"color": "pink", "from": "noun_knecht", "to": "regional heritage art", "value": 0.2854363860008229}, {"color": "pink", "from": "verb_reden", "to": "regional heritage art", "value": 0.2264370896795244}, {"color": "pink", "from": "verb_schaun", "to": "regional heritage art", "value": 0.2800463201925052}, {"color": "pink", "from": "noun_sonntag", "to": "regional heritage art", "value": 0.2747466041876358}, {"color": "pink", "from": "verb_sp\u00fcren", "to": "cultural critique", "value": 0.2524267551133221}, {"color": "pink", "from": "verb_erinnern", "to": "cultural critique", "value": 0.1617809433378484}, {"color": "pink", "from": "noun_k\u00f6rper", "to": "cultural critique", "value": 0.1696058154392871}, {"color": "pink", "from": "noun_bein", "to": "cultural critique", "value": 0.1459063693532732}, {"color": "pink", "from": "noun_angst", "to": "cultural critique", "value": 0.1260674993255791}, {"color": "pink", "from": "noun_vorstellung", "to": "cultural critique", "value": 0.1346355095533125}, {"color": "pink", "from": "noun_geruch", "to": "cultural critique", "value": 0.1497210424105389}, {"color": "pink", "from": "noun_satz", "to": "cultural critique", "value": 0.1350129399077879}, {"color": "pink", "from": "verb_bekommen", "to": "cultural critique", "value": 0.1134479248543544}, {"color": "pink", "from": "noun_erkenntnis", "to": "cultural critique", "value": 0.1468534034586052}, {"color": "pink", "from": "noun_cresspahl", "to": "modernity critique", "value": 0.3622085953699127}, {"color": "pink", "from": "noun_dr", "to": "modernity critique", "value": 0.3348093258603831}, {"color": "pink", "from": "verb_erinnern", "to": "modernity critique", "value": 0.2511864438619406}, {"color": "pink", "from": "noun_person", "to": "modernity critique", "value": 0.250244171878214}, {"color": "pink", "from": "verb_bestehen", "to": "modernity critique", "value": 0.2520495497290627}, {"color": "pink", "from": "noun_s", "to": "modernity critique", "value": 0.3122316788645442}, {"color": "pink", "from": "noun_gesin", "to": "modernity critique", "value": 0.3028624324755146}, {"color": "pink", "from": "noun_schule", "to": "modernity critique", "value": 0.261246886980907}, {"color": "pink", "from": "noun_marie", "to": "modernity critique", "value": 0.2881650373385861}, {"color": "pink", "from": "noun_zeitung", "to": "modernity critique", "value": 0.2578065096739312}, {"color": "pink", "from": "verb_kriegen", "to": "social critique", "value": 0.2682887811745133}, {"color": "pink", "from": "verb_bekommen", "to": "social critique", "value": 0.165549139672178}, {"color": "pink", "from": "noun_geld", "to": "social critique", "value": 0.1651158814820044}, {"color": "pink", "from": "verb_schreien", "to": "social critique", "value": 0.1690626664893721}, {"color": "pink", "from": "adj_bissch", "to": "social critique", "value": 0.1930455979153792}, {"color": "pink", "from": "verb_sp\u00fcren", "to": "social critique", "value": 0.1819361663420759}, {"color": "pink", "from": "verb_merken", "to": "social critique", "value": 0.1425837422009988}, {"color": "pink", "from": "noun_essen", "to": "social critique", "value": 0.1727727781044619}, {"color": "pink", "from": "verb_warten", "to": "social critique", "value": 0.1224513322957279}, {"color": "pink", "from": "verb_reden", "to": "social critique", "value": 0.1102365088114402}, {"color": "pink", "from": "verb_bekommen", "to": "critique of the present", "value": 0.2299623954343679}, {"color": "pink", "from": "noun_zigarette", "to": "critique of the present", "value": 0.2486197694347827}, {"color": "pink", "from": "noun_bein", "to": "critique of the present", "value": 0.2065233560548634}, {"color": "pink", "from": "noun_zeitung", "to": "critique of the present", "value": 0.2224414584433282}, {"color": "pink", "from": "noun_auto", "to": "critique of the present", "value": 0.2366107064130403}, {"color": "pink", "from": "noun_junge", "to": "critique of the present", "value": 0.194220493502392}, {"color": "pink", "from": "verb_warten", "to": "critique of the present", "value": 0.1520438550133402}, {"color": "pink", "from": "adj_bissch", "to": "critique of the present", "value": 0.2054937765100548}, {"color": "pink", "from": "noun_krieg", "to": "critique of the present", "value": 0.1785247046095454}, {"color": "pink", "from": "noun_nase", "to": "critique of the present", "value": 0.1694224332586741}, {"color": "pink", "from": "noun_tier", "to": "civilisation critique", "value": 0.2869237351527258}, {"color": "pink", "from": "noun_meer", "to": "civilisation critique", "value": 0.2720037355273972}, {"color": "pink", "from": "noun_schiff", "to": "civilisation critique", "value": 0.2857046090550134}, {"color": "pink", "from": "noun_krieg", "to": "civilisation critique", "value": 0.2666680619469816}, {"color": "pink", "from": "noun_k\u00f6rper", "to": "civilisation critique", "value": 0.2452711155201209}, {"color": "pink", "from": "noun_masse", "to": "civilisation critique", "value": 0.2569595148903496}, {"color": "pink", "from": "verb_drehen", "to": "civilisation critique", "value": 0.2384721462772079}, {"color": "pink", "from": "verb_laufen", "to": "civilisation critique", "value": 0.202018730437228}, {"color": "pink", "from": "verb_t\u00f6ten", "to": "civilisation critique", "value": 0.2642341304117166}, {"color": "pink", "from": "verb_blicken", "to": "civilisation critique", "value": 0.1933525560505553}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+                    network.on("selectNode", neighbourhoodHighlight);
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>
