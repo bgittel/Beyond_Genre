@@ -80,6 +80,7 @@ sns.set(font_scale=2)
 sns.set_style("whitegrid")
 f, ax = plt.subplots(figsize = (12,10))
 g = sns.pointplot(x='cosine_distance', y='category', data=dist_df, order = sorter, palette={'b'})
+g.figure.savefig(r'F:\Kritik_projekt\results\Figures\Fig2.jpg',dpi=600, bbox_inches='tight')
 plt.show()
 
 

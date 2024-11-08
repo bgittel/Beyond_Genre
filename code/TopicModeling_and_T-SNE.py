@@ -12,6 +12,8 @@ from sklearn.feature_extraction.text import TfidfTransformer
 import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt
+from sklearn.manifold import TSNE
+import colorcet as cc
 
 ######################################################################################################################
 #NMF topic modeling
@@ -85,8 +87,58 @@ document_topic_df.to_csv(r'NMF_doctopic_30topics.csv', sep='\t', index=False)
 
 #########################################################################################################################
 #t-sne, ELTEC vs Modernity Critique Corpus
-from sklearn.manifold import TSNE
-import colorcet as cc
+
+num_topics = 30
+cols = []
+n = 0
+while n < num_topics:
+    cols.append('topic_' + str(n))
+    n+=1
+
+columns=['document_name']+cols
+    
+document_topic_df = pd.read_csv(r'F:\Kritik_projekt\results\NMF_doctopic_book_30topics_417.csv', sep='\t', names=columns)
+
+meta_df = pd.read_csv(r'F:\Kritik_projekt\3_Korpora_BBAW_normalized\MoL_metadata_20_06_2024_manually_corrected.csv', sep=',')
+cols = ['ELTEC','kulturkriCategorical','gesellschaftskriCategorical','zivilisationskriCategorical','dekadenzCategorical','sozialkriCategorical','zeitkriCategorical','modernekriCategorical','heimatkunstCategorical','conservative_revolutionCategorical','worldview_literatureCategorical','fortschrittskriCategorical','filename_normalized_text']#,'adventureCategorical'
+meta_df_part = meta_df[cols]
+
+multi_list = []
+x = 0
+while x < 417:
+    row = meta_df_part.loc[[x]]
+    true_count = int(row.eq(True).sum(axis=1))
+    if true_count > 1:
+        multi_list.append(x)
+    x+=1
+
+meta_multi_df = meta_df_part.loc[multi_list]
+meta_multi_df = meta_multi_df.reset_index()
+
+multi_file_names = []
+orig_file_names = []
+row_idx = 0
+while row_idx < 101:
+    row = meta_multi_df.loc[[row_idx]]
+    orig_file_name = row['filename_normalized_text'].item()[:-4]
+    orig_file_names.append(orig_file_name)
+    for col in cols:
+        if row[col].item() == True:
+            name = col + '_' + row['filename_normalized_text'].item()[:-4]
+            multi_file_names.append(name)
+    row_idx +=1
+
+added_rows = []
+for orig_name in orig_file_names:
+    row = document_topic_df.loc[document_topic_df['document_name'] == 'multi_' + orig_name] 
+    for multi_name in multi_file_names:
+        if ('_').join(multi_name.split('_')[-3:]) == orig_name:
+            new_row = row.replace('multi_' + orig_name, multi_name)
+            added_rows.append(new_row)
+
+added_df = pd.concat(added_rows)
+
+document_topic_df = pd.concat([document_topic_df, added_df], ignore_index=True)
 
 group = []
 for name in document_topic_df['document_name']:
@@ -119,6 +171,7 @@ for name in document_topic_df['document_name']:
         group.append('multiple categories')
 
 document_topic_df['group'] = group
+document_topic_df = document_topic_df.sort_values('group').reset_index(drop = True)
 
 t_sne = TSNE(n_components=2, verbose=2, perplexity=5, metric ='cosine', n_iter=300, method='exact', random_state=0)
 
@@ -128,7 +181,7 @@ tsne_results = t_sne.fit_transform(for_tsne)
 document_topic_df['tsne-2d-one'] = tsne_results[:,0]
 document_topic_df['tsne-2d-two'] = tsne_results[:,1]
 
-document_topic_df['style'] = ["ELTeC"] * 81 + ["Modernity Critique Corpus"] * 336
+document_topic_df['style'] = ["ELTeC"] * 100 + ["Modernity Critique Corpus"] * 554
 
 palette = sns.color_palette(cc.glasbey, n_colors=13)
 
@@ -146,6 +199,8 @@ g = sns.scatterplot(
     s=250,
     alpha=0.5,
 )
+g.legend(title='group', loc='upper left')
+g.figure.savefig(r'F:\Kritik_projekt\results\Figures\Fig3.jpg',dpi=600, bbox_inches='tight')
 plt.show()
 
 #########################################################################################################################
@@ -249,6 +304,7 @@ g = sns.scatterplot(
     alpha=0.5,
    # markers=markers
 )
+g.figure.savefig(r'F:\Kritik_projekt\results\Figures\Fig4.jpg',dpi=600, bbox_inches='tight')
 plt.show()
 g.legend(title='group', loc='best', bbox_to_anchor=(1, 1))
 

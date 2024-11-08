@@ -54,15 +54,57 @@ df_avg = df[df.columns[~df.columns.isin(['doc_names'])]].groupby('group').mean()
  
 rest_mean = df_avg[~df_avg.index.isin(['ELTEC'])].mean()
 rest_mean.name = 'modernity critique corpus'
-df_avg = df_avg.append(rest_mean)
-df_avg = df_avg.drop(index=['progress critique'])
+df_avg.loc['modernity critique corpus'] = rest_mean
 
-os.chdir (r'F:\Kritik_projekt\results\radar_plots_30topics_417')
- 
 # number of variable
 categories = cols[1:]
 N = len(categories)
- 
+
+os.chdir (r'F:\Kritik_projekt\results\radar_plots_30topics_417')
+
+#########################################################################################################################
+#make chart for "progress critique"
+row = 8
+angles = [n / float(N) * 2 * pi for n in range(N)]
+angles += angles[:1]
+    
+# Initialise the spider plot
+f = plt.figure(figsize=(16,10))
+ax = plt.subplot(111, polar=True)
+   
+# If you want the first axis to be on top:
+ax.set_theta_offset(pi / 2)
+ax.set_theta_direction(-1)
+
+# Draw one axe per variable + add labels
+plt.xticks(angles[:-1], categories, color='black', size=15)
+    # Draw ylabels
+ax.set_rlabel_position(0)
+plt.yticks(color="black", size=14)
+plt.ylim(0,max(df_avg.max())*1.01)
+    # Plot data
+    
+values=df_avg.iloc[0].values.flatten().tolist()
+values += values[:1]
+ax.plot(angles, values, linewidth=1.5, linestyle='solid', label="ELTEC")
+ax.fill(angles, values, 'b', alpha=0.1)
+    
+# Ind2
+values=df_avg.iloc[row].values.flatten().tolist()
+values += values[:1]
+ax.plot(angles, values, linewidth=1.5, linestyle='solid', label=df_avg.index[row])
+ax.fill(angles, values, 'r', alpha=0.1)
+    
+plt.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
+#plt.title(df_avg.index[row] + '_vs_ELTEC')
+    
+f.savefig(df_avg.index[row] + '_vs_ELTEC.jpg', dpi=600, bbox_inches='tight')
+
+
+#########################################################################################################################
+#make chart for the rest
+df_avg = df_avg.drop(index=['progress critique'])
+
 row = 1
 while row < len(df_avg):
 
@@ -100,6 +142,6 @@ while row < len(df_avg):
     plt.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
     #plt.title(df_avg.index[row] + '_vs_ELTEC')
     
-    f.savefig(df_avg.index[row] + '_vs_ELTEC.png')
+    f.savefig(df_avg.index[row] + '_vs_ELTEC.jpg', dpi=600, bbox_inches='tight')
     row += 1
     
