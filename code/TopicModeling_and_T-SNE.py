@@ -100,7 +100,7 @@ columns=['document_name']+cols
 document_topic_df = pd.read_csv(r'F:\Kritik_projekt\results\NMF_doctopic_book_30topics_417.csv', sep='\t', names=columns)
 
 meta_df = pd.read_csv(r'F:\Kritik_projekt\3_Korpora_BBAW_normalized\MoL_metadata_20_06_2024_manually_corrected.csv', sep=',')
-cols = ['ELTEC','kulturkriCategorical','gesellschaftskriCategorical','zivilisationskriCategorical','dekadenzCategorical','sozialkriCategorical','zeitkriCategorical','modernekriCategorical','heimatkunstCategorical','conservative_revolutionCategorical','worldview_literatureCategorical','fortschrittskriCategorical','filename_normalized_text']#,'adventureCategorical'
+cols = ['kulturkriCategorical','gesellschaftskriCategorical','zivilisationskriCategorical','dekadenzCategorical','sozialkriCategorical','zeitkriCategorical','modernekriCategorical','heimatkunstCategorical','conservative_revolutionCategorical','worldview_literatureCategorical','fortschrittskriCategorical','filename_normalized_text']#,'adventureCategorical'
 meta_df_part = meta_df[cols]
 
 multi_list = []
@@ -114,11 +114,12 @@ while x < 417:
 
 meta_multi_df = meta_df_part.loc[multi_list]
 meta_multi_df = meta_multi_df.reset_index()
+del meta_multi_df['ELTEC']
 
 multi_file_names = []
 orig_file_names = []
 row_idx = 0
-while row_idx < 101:
+while row_idx < 90:
     row = meta_multi_df.loc[[row_idx]]
     orig_file_name = row['filename_normalized_text'].item()[:-4]
     orig_file_names.append(orig_file_name)
@@ -172,6 +173,7 @@ for name in document_topic_df['document_name']:
 
 document_topic_df['group'] = group
 document_topic_df = document_topic_df.sort_values('group').reset_index(drop = True)
+document_topic_df = document_topic_df[document_topic_df.group != 'multiple categories']
 
 t_sne = TSNE(n_components=2, verbose=2, perplexity=5, metric ='cosine', n_iter=300, method='exact', random_state=0)
 
@@ -181,7 +183,7 @@ tsne_results = t_sne.fit_transform(for_tsne)
 document_topic_df['tsne-2d-one'] = tsne_results[:,0]
 document_topic_df['tsne-2d-two'] = tsne_results[:,1]
 
-document_topic_df['style'] = ["ELTeC"] * 100 + ["Modernity Critique Corpus"] * 554
+document_topic_df['style'] = ["ELTeC"] * 81 + ["Modernity Critique Corpus"] * 442
 
 palette = sns.color_palette(cc.glasbey, n_colors=13)
 
