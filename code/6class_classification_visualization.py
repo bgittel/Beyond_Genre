@@ -49,7 +49,7 @@ all_counts['group'] = all_counts['group'].map({'zeitkriCategorical': 'critique o
                                                'multi':'multiple categories'})
 
 all_counts['dimension'] = all_counts['dimension'].map({'Gesund-Krank': 'Healthy-ill', 
-                                               'Harmonisch-Disharmonisch': 'Harmonic-Disharmonic',
+                                               'Harmonisch-Disharmonisch': 'Harmonious-Disharmonious',
                                                'Natürlich-Kulturell': 'Natural-Cultural',
                                                'Tief-Oberflächlich': 'Profound-Superficial',
                                                'Traditionell-Modern':'Traditional-Modern'})
@@ -62,9 +62,19 @@ palette = sns.color_palette(cc.glasbey, n_colors=13)
 sns.set(font_scale=1.5)
 sns.set_style("whitegrid")
 f, ax = plt.subplots(figsize = (16,8))
-g = sns.boxplot(x='dimension', y='percentage', hue='class', palette=palette, data=df_visual, showfliers=False)
+g = sns.boxplot(x='dimension', y='percentage', hue='class', palette=palette, data=df_visual)#, showfliers=False)
 g.legend(title='group', loc='best', bbox_to_anchor=(1, 1))
-g.figure.savefig(r'F:\Kritik_projekt\results\Figures\Fig9.jpg',dpi=600)
+g.figure.savefig(r'F:\Kritik_projekt\results\Figures\Fig10.jpg',dpi=600)
+plt.show()
+
+df_visual_1 = df_visual.loc[~df_visual['group'].isin(['social critique', 'society critique'])]
+palette = sns.color_palette(cc.glasbey, n_colors=13)
+sns.set(font_scale=1.5)
+sns.set_style("whitegrid")
+f, ax = plt.subplots(figsize = (16,8))
+g = sns.boxplot(x='dimension', y='percentage', hue='class', palette=palette, data=df_visual_1)#, showfliers=False)
+g.legend(title='group', loc='best', bbox_to_anchor=(1, 1))
+g.figure.savefig(r'F:\Kritik_projekt\results\Figures\Fig10_.jpg',dpi=600)
 plt.show()
 
 #########################################################################################################################
@@ -126,12 +136,12 @@ while file_count < len(files_class6):
                 count_df_i = count_df.copy()
                 count_df_i['group'] = [i.split('_')[0]] * len(count_df)
                 count_df_i['document_name'] = file_name[:-4]
-                count_df_i['percentage'] = count_df_i['count'].div(count_sum)
+                count_df_i['average percentage'] = count_df_i['count'].div(count_sum)
                 all_count_dfs.append(count_df_i)
     if file_name[:-4].split('_')[0] != 'multi':            
         count_df['group'] = [file_name.split('_')[0]] * len(count_df)
         count_df['document_name'] = file_name[:-4]
-        count_df['percentage'] = count_df['count'].div(count_sum)
+        count_df['average percentage'] = count_df['count'].div(count_sum)
         all_count_dfs.append(count_df)
     file_count+=1
 
@@ -152,29 +162,17 @@ all_counts['group'] = all_counts['group'].map({'zeitkriCategorical': 'critique o
                                                'multi':'multiple categories'})
 
 all_counts['dimension'] = all_counts['dimension'].map({'Gesund-Krank': 'Healthy-ill', 
-                                               'Harmonisch-Disharmonisch': 'Harmonic-Disharmonic',
+                                               'Harmonisch-Disharmonisch': 'Harmonious-Disharmonious',
                                                'Natürlich-Kulturell': 'Natural-Cultural',
                                                'Tief-Oberflächlich': 'Profound-Superficial',
                                                'Traditionell-Modern':'Traditional-Modern'})
 
 all_counts = all_counts.fillna('None')
 
-df_visual = all_counts[all_counts['dimension'] != 'None']
-
-palette = sns.color_palette(cc.glasbey, n_colors=13)
-sns.set(font_scale=1.5)
-sns.set_style("whitegrid")
-f, ax = plt.subplots(figsize = (16,8))
-g = sns.boxplot(x='dimension', y='percentage', hue='group', palette=palette, data=df_visual, showfliers=False)
-#ax.set_yscale('log')
-g.legend(title='group', loc='best', bbox_to_anchor=(1, 1))
-plt.show()
-
-
 all_counts_avg = []
 for group in set(all_counts['group']):
     df_one_group = all_counts[all_counts['group'] == group]
-    df_one_group = df_one_group[['dimension', 'percentage']]
+    df_one_group = df_one_group[['dimension', 'average percentage']]
     df_one_group1 = df_one_group.groupby(['dimension']).mean()
     df_one_group1['group'] = [group] * len(df_one_group1)
     all_counts_avg.append(df_one_group1)
@@ -182,8 +180,7 @@ for group in set(all_counts['group']):
 all_counts_avg_df = pd.concat(all_counts_avg)
 all_counts_avg_df = all_counts_avg_df.reset_index()
 all_counts_avg_df_visual = all_counts_avg_df[all_counts_avg_df['dimension'] != 'None']
-all_counts_avg_df_visual = all_counts_avg_df_visual.rename(columns={'percentage': 'average percentage'}) 
-
+all_counts_avg_df_visual = all_counts_avg_df_visual.sort_values(['group', 'dimension'])
 
 pd.DataFrame.iteritems = pd.DataFrame.items
 import seaborn.objects as so
@@ -195,5 +192,5 @@ import seaborn.objects as so
 .layout(size=(12, 7))
 .limit(x=(0,0.15))
 .scale(color='viridis')#icefire
-.save(r'F:\Kritik_projekt\results\Figures\Fig10.jpg',dpi=600, bbox_inches='tight')
+.save(r'F:\Kritik_projekt\results\Figures\Fig111.jpg',dpi=600, bbox_inches='tight')
 )
